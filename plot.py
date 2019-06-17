@@ -3,6 +3,7 @@ import sys
 import glob
 import re
 from ww import f
+from generateFile import generate_file
 
 def heatmap(path):
     for file in glob.glob(path + '/02_OTU/taxa_heatmap/*/*.csv'):
@@ -17,6 +18,24 @@ def venn(path):
 def barplot(path):
     for file in glob.glob(path + '/02_OTU/Top10*/*/*.csv'):
         os.system(f('Rscript /home/jbwang/code/top10_barplot.R {file}'))
+
+def krona_tree(path):
+    generate_file(path)
+    file_list = sorted([file for file in glob.glob(f('{path}/02_OTU/krona/file_list/*.txt'))])
+    krona_file = ' '.join(file_list)
+    # print(krona_file)
+    os.system(f('ktImportText {krona_file} -o {path}/02_OTU/krona/krona.html'))
+
+    # os.system(f"sed -i 's/d_/k_/g;s/;/; /g' {path}/data/{groupvs}/01.OTU_Taxa/original/otu_taxa_table.xls")
+    os.system(f('python3 /home/jbwang/code/level_tree_sample.py \
+                -f {path}/02_OTU/otu_table_tax.txt \
+                -t 10 -o {path}/02_OTU/taxa_tree/sample_tree'))
+
+    os.system(f('python3 /home/jbwang/code/level_tree.py \
+                -f {path}/02_OTU/otu_table_tax.txt \
+                -t 10 \
+                -g {path}/02_OTU/taxa_tree/group.txt \
+                -o {path}/02_OTU/taxa_tree'))
 
 def alpha(path):
     os.system(f('Rscript /home/jbwang/code/AlphaDiversity.R {path}'))
@@ -37,11 +56,13 @@ def beta(path):
 
 def main():
     path = sys.argv[1].rstrip('/')
-    heatmap(path)
-    venn(path)
-    barplot(path)
-    alpha(path)
-    beta(path)
+    # heatmap(path)
+    # venn(path)
+    # barplot(path)
+    krona_tree(path)
+    # alpha(path)
+    # beta(path)
+
 
 if __name__=='__main__':
     main()
