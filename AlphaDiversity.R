@@ -128,13 +128,13 @@ for (index in index_list) {
         ttest <- t.test(x ~ Group, data)  # 假设俩个变量方差不齐
         p_value <- ttest$p.value
         ttest_result <- data.frame(groupvs, p_value)
-        write.table(ttest_result, file=paste0(path, '03_Diversity/Alpha/alpha_div_collated/', index, '/ttest.txt'), sep = '\t', row.names = F)
+        write.table(ttest_result, file=paste0(path, '/03_Diversity/Alpha/alpha_div_collated/', index, '/ttest.txt'), sep = '\t', row.names = F)
         ## wilcox
         ## wilcox.test()函数可以用来做Wilcoxon秩和检验，也可以用于做Mann-Whitney U检验。当参数为单个样本，或者是两个样本相减，或者是两个参数，paired=TRUE时，是Wilcoxon秩和检验。当paired = FALSE（独立样本）时，就是Mann-Whitney U检验
         wilcox <- wilcox.test(x ~ Group, data)
         p_value <- wilcox$p.value
         wilcox_result <- data.frame(groupvs, p_value)
-        write.table(wilcox_result, file=paste0(path, '03_Diversity/Alpha/alpha_div_collated/', index, '/wilcox.txt'), sep = '\t', row.names = F)
+        write.table(wilcox_result, file=paste0(path, '/03_Diversity/Alpha/alpha_div_collated/', index, '/wilcox.txt'), sep = '\t', row.names = F)
     }else{
         # groupvs <- paste(unique(sample_info$Group), collapse = '_vs_')
         ## tukey
@@ -144,12 +144,12 @@ for (index in index_list) {
         fit <- aov(x ~ Group, data)
         tukey <- TukeyHSD(fit)
         tukey_result <- tukey$Group
-        write.table(tukey_result, file=paste0(path, '03_Diversity/Alpha/alpha_div_collated/', index, '/tukey.txt'), sep = '\t')
+        write.table(tukey_result, file=paste0(path, '/03_Diversity/Alpha/alpha_div_collated/', index, '/tukey.txt'), sep = '\t')
         ##Kurskal-Wallis检验是Wilcoxon方法（其实是Mann-Whitney检验）用于多个样本。当对两个样本进行比较的时候，Kurskal-Wallis检验与Mann-Whitney检验是等价的。
         # wilcox <- kruskal.test(x ~ Group, data)
         wilcox <- kruskal(data$x, data$Group, group = F)
         wilcox_result <- wilcox$comparison
-        write.table(wilcox_result, file=paste0(path, '03_Diversity/Alpha/alpha_div_collated/', index, '/wilcox.txt'), sep = '\t')
+        write.table(wilcox_result, file=paste0(path, '/03_Diversity/Alpha/alpha_div_collated/', index, '/wilcox.txt'), sep = '\t')
 
         # ## 每俩组wilcox
         # group2vs <- t(combn(unique(sample_info$Group), 2))

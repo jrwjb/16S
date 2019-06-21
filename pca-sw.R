@@ -10,10 +10,10 @@ setwd(path)
 colpalette <- c("#1d953f","#102b6a","#c77eb5", "#fcf16e", "#2585a6", "purple", "#e0861a", "#d71345", "#6b473c", "#78a355", "#fdb933", "#5e7c85", "#411445", "#c37e00", "#bed742","#009ad6","#9d9087")
 data <- read.table('otu_table_even.txt', row.names = 1, header = T, sep = '\t')
 # data <- data[,-c(ncol(data))]
-datasum <- apply(data[1:ncol(data)],2,sum,na.rm=T)
+#datasum <- apply(data[1:ncol(data)],2,sum,na.rm=T)
 xMN <- t(data)
 # colnames(xMN) <- data$Protein
-xMN <- xMN/datasum
+# xMN <- xMN/datasum
 xMN2 <- xMN[,apply(xMN,2,function(x){is.na(x) %>% sum()})<(nrow(xMN)/2)]
 compute_pca <- opls(x = xMN2,
                     predI = NA,     

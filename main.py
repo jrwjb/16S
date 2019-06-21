@@ -24,35 +24,32 @@ class Pipeline(object):
     def sample_id(self):
         sample_info = os.path.join(self.project, 'sample_info.txt')
         df = pd.read_csv(sample_info, sep='\t')
-        id_list = '\t'.join(list(df['SampleID']))
-        return id_list
+        return list(df['SampleID'])
 
     def flash(self):
-        print('开始组装...')
+        print('FLASH...')
         self.if_exists(self.project + '/00_RawData/ExtendData')
         # for file in os.listdir(self.project + '/00_RawData'):
         # 	if re.search(r'.1.fq.gz|_1.fq.gz|.1.fastq.gz|_1.fastq.gz|.R1.fq.gz|_R1.fq.gz |.R1.fastq.gz|_R1.fastq.gz', file):
-        # 		sample = '_'.join(os.path.basename(file).split('_')[:-1])
-	       #      tmp = sample.split('_')[-1]
-	       #      os.system(f('/home/jbwang/soft/FLASH-1.2.11/flash \
-	       #                  {self.project}/00_RawData/{sample}_1.fq.gz {self.project}/00_RawData/{sample}_2.fq.gz \
-	       #                  -d {self.project}/00_RawData/ExtendData -o {tmp} -x 0.1 -M 150 -t 16 -z'))
 
-        for file in glob.glob(self.project + '/00_RawData/*_1.fq.gz'):
-            sample = '_'.join(os.path.basename(file).split('_')[:-1])
-            tmp = sample.split('_')[-1]
-            os.system(f('/home/jbwang/soft/FLASH-1.2.11/flash \
-                        {self.project}/00_RawData/{sample}_1.fq.gz {self.project}/00_RawData/{sample}_2.fq.gz \
-                        -d {self.project}/00_RawData/ExtendData -o {tmp} -x 0.1 -M 150 -t 16 -z'))
-        print('组装完成')
+        fq1_list = sorted([file for file in glob.glob(self.project + '/00_RawData/*1.fq.gz')])
+        fq2_list = sorted([file for file in glob.glob(self.project + '/00_RawData/*2.fq.gz')])
+
+        for fq1, fq2 in zip(fq1_list, fq2_list):
+            sample = ''.join([i for i in self.sample_id() if i in fq1])
+            os.system(f('/home/jbwang/soft/FLASH-1.2.11/flash {fq1} {fq2} \
+                        -d {self.project}/00_RawData/ExtendData -o {sample} -x 0.1 -M 150 -t 16 -z'))
+
+        print('FLASH Done')
 
     def qiime_qc(self):
-        print('开始质控及去嵌合体...')
+        print('QC and Remove chimeras...')
         self.if_exists(self.project + '/00_RawData/TrimQC')
         self.if_exists(self.project + '/01_CleanData')
         self.if_exists(self.project + '/tmp')
         for file in glob.glob(self.project + '/00_RawData/ExtendData/*.extendedFrags.fastq.gz'):
-            id_match = re.search(file.split('/')[-1].split('.')[0], self.sample_id()).group()
+            # id_match = re.search(file.split('/')[-1].split('.')[0], self.sample_id()).group()
+            id_match = file.split('/')[-1].split('.')[0]
             os.system(f('split_libraries_fastq.py  \
                         -i {file} --sample_ids {id_match} \
                         -o {self.project}/00_RawData/TrimQC/{id_match} \
@@ -98,28 +95,20 @@ class Pipeline(object):
             os.system(f('rm {self.project}/tmp/chimeras.id {self.project}/tmp/chimeras.fa {self.project}/tmp/notgold.fa \
                         {self.project}/tmp/gold.uchime {self.project}/tmp/ids {self.project}/tmp/id'))
             os.system(f('rm -rf {self.project}/01_CleanData/{id_match}/sed*'))
-        print('质控完成')
+        print('QC Done')
 
     def get_fq_file(self):
         # 获取fastq文件
         rawPath = self.project + '/00_RawData'
         cleanPath = self.project + '/01_CleanData'
-        rawFile_list = []
-        cleanFile_list = []
-        for file in os.listdir(rawPath):
-            if re.search(r'_1', file):
-                rawData = rawPath + '/' + file
-                rawFile_list.append(rawData)
-            # elif re.search(r'extend', file):
-            #     combineData = data + '\\' + file
-        for file in glob.glob(cleanPath + '/*/*.fq'):
-            cleanFile_list.append(file)
+        rawFile_list = sorted([file for file in glob.glob(rawPath + '/*1.fq.gz')])
+        cleanFile_list = sorted([file for file in glob.glob(cleanPath + '/*/*.fq')])
 
-        return sorted(rawFile_list), sorted(cleanFile_list)
+        return rawFile_list, cleanFile_list
 
     def data_statis(self):
-        print('开始质控前后数据统计...')
-        static_file = self.project + '/static.csv'
+        print('QC Static...')
+        static_file = self.project + '/QcStatic.csv'
         with open(static_file, 'w') as f:
             f.write('SampleID,Raw PE,Clean PE,Base(nt),AvgLen(nt),Q20(%),Q30(%),GC(%),Effective(%)\n')
             for rawFile, cleanFile in zip(self.get_fq_file()[0], self.get_fq_file()[1]):
@@ -136,21 +125,20 @@ class Pipeline(object):
 
                 f.write('{},{},{},{},{},{},{},{},{}\n'.format(
                     sample, rawReads, cleanReads, total_count, average_len, q20_percents, q30_percents, GC_percents, Effect))
-        print('统计完成')
+        print('Static Done')
 
-    def derep_fa(self):
+    def otu(self):
+        print('OTU and OTU_table...')
+        self.if_exists(self.project + '/02_OTU')
         # 去重复
-        os.system(f('cat {self.project}/01_CleanData/*/*.fna > {self.project}/01_CleanData/all.fa'))
-        os.system(f("sed -i 's/_.*//g' {self.project}/01_CleanData/all.fa"))
+        os.system(f('cat {self.project}/01_CleanData/*/*.fa > {self.project}/01_CleanData/all.fa'))
+        os.system(f("sed -i 's/_[0-9]*//2' {self.project}/01_CleanData/all.fa"))
         os.system(f('/home/jbwang/soft/Usearch/Usearch11 \
                     -fastx_uniques {self.project}/01_CleanData/all.fa \
                     -sizeout \
                     -relabel Uniq \
                     -fastaout {self.project}/01_CleanData/all_norep.fa'))
 
-    def otu(self):
-        print('开始生成OTU序列和OTU_table...')
-        self.if_exists(self.project + '/02_OTU')
         # Usearch 方法
         # 聚类生成 OTU 序列
         os.system(f('/home/jbwang/soft/Usearch/Usearch11 \
@@ -165,13 +153,13 @@ class Pipeline(object):
                             -otutabout {self.project}/02_OTU/otu_table.txt \
                             -strand plus \
                             -id 0.97'))
-        print('OTU完成')
+        print('OTU Done')
 
 
     def annotation(self):
         # # 分类
         # Greengene base(默认)
-        print('使用Greengene注释...')
+        print('Tax with Greengenes...')
         os.system('assign_taxonomy.py -i {}/02_OTU/otus.fa \
         -m rdp -c 0.8 -o {}/02_OTU'.format(self.project, self.project))
 
@@ -205,13 +193,13 @@ class Pipeline(object):
         os.system(f('biom summarize-table \
             -i {self.project}/02_OTU/otu_table_tax.biom \
             -o {self.project}/02_OTU/otu_table_tax.sum'))
-        print('注释完成')
+        print('Tax Done')
 
     def core_microbiome(self):
         os.system(f('compute_core_microbiome.py -i {self.project}/02_OTU/otu_table_tax.sum -o {self.project}/OTU/Core'))
 
     def build_tree(self):
-        print('开始建树...')
+        print('Phylogeny Tree...')
         self.if_exists(self.project + '/02_OTU/backup')
         # clustalo软件比对
         os.system(f('/home/jbwang/soft/clustalo/clustalo-1.2.4-Ubuntu-x86_64 \
@@ -232,7 +220,7 @@ class Pipeline(object):
         os.system(f('make_phylogeny.py \
                     -i {self.project}/02_OTU/backup/otus_pfiltered.fasta \
                     -o {self.project}/02_OTU/otus.tre'))
-        print('建树完成')
+        print('Tree Done')
 
     def seqs_min(self):
         # 获取最小数据量
@@ -243,7 +231,7 @@ class Pipeline(object):
         return min_num
 
     def diversity(self):
-        print('开始qiime1多样性分析...')
+        print('Qiime1 Diversity...')
         if os.path.exists(f('{self.project}/03_Diversity')):
             os.system(f('rm -rf {self.project}/03_Diversity'))
         # 添加#到sample_info.txt中
@@ -259,7 +247,7 @@ class Pipeline(object):
 
         # 用完修改回来
         os.system(f("sed -i 's/#//' {self.project}/sample_info.txt"))
-        print('qiime1多样性分析完成')
+        print('Diversity Done')
 
     def alpha_diversity(self):
         # 计算常用的Alpha多样性指数
@@ -328,7 +316,7 @@ class Pipeline(object):
                     os.system(f("awk -F'\t' '{{$2=null;$3=null;$5=null;print $0}}' {tmp_file} > {out}"))   #### 删除不必要的列
                     os.system(f("sed -i 's/\s\+/\t/g' {out}"))    ### 替换连续空格为tab
                     os.system(f('lefse-format_input.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.txt {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.in -f c -c 2 -s -1 -u 1 -o 1000000'))
-                    os.system(f('run_lefse.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.in {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res'))
+                    os.system(f('run_lefse.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.in {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res -l 2'))
                     os.system(f('lefse-plot_res.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.png --dpi 600'))
                     os.system(f('lefse-plot_cladogram.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.cla.png --format png --dpi 600'))
 
@@ -336,14 +324,13 @@ class Pipeline(object):
         # self.flash()
         # self.qiime_qc()
         # self.data_statis()
-        # self.derep_fa()
         # self.otu()
         # self.annotation()
         # self.build_tree()
-        # self.diversity()
-        # self.alpha_diversity()
+        self.diversity()
+        self.alpha_diversity()
         self.beta_diversity()
-        # self.bak()
+        self.bak()
         self.lefse()
 
 if __name__ == '__main__':
@@ -353,5 +340,5 @@ if __name__ == '__main__':
     project = args.input
     project = project.rstrip('/')
     pipeline = Pipeline(project)
-    pipeline.main()
-    # otu.main(project)
+    # pipeline.main()
+    otu.main(project)

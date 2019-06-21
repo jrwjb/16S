@@ -27,9 +27,9 @@ otu_phy <- phyloseq(count_phy, tax_phy, sample_phy)
 dir.create(paste0(path, '/03_Diversity/Beta/PCA'))
 colpalette <- c("#1d953f","#102b6a","#c77eb5", "#fcf16e", "#2585a6", "purple", "#e0861a", "#d71345", "#6b473c", "#78a355", "#fdb933", "#5e7c85", "#411445", "#c37e00", "#bed742","#009ad6","#9d9087")
 data <- otu_table
-datasum <- apply(data[1:ncol(data)],2,sum,na.rm=T)
+# datasum <- apply(data[1:ncol(data)],2,sum,na.rm=T)
 xMN <- t(data)
-xMN <- xMN/datasum
+# xMN <- xMN/datasum
 xMN2 <- xMN[,apply(xMN,2,function(x){is.na(x) %>% sum()})<(nrow(xMN)/2)]
 compute_pca <- opls(x = xMN2,
                     predI = NA,     
@@ -215,8 +215,8 @@ adonis_result <- data.frame(groupvs, R2, p_value)
 write.table(adonis_result, paste0(path, '/03_Diversity/Beta/adonis/', groupvs, '.txt'), sep = '\t', row.names = F)
 
 ########### distance boxplot ###########
-distance_unweight <- read.table(paste0(path, '03_Diversity/Beta/Beta_div/unweighted_unifrac/Group_Distances.txt'), sep = '\t', fill = T)
-distance_weight <- read.table(paste0(path, '03_Diversity/Beta/Beta_div/weighted_unifrac/Group_Distances.txt'), sep = '\t', fill = T)
+distance_unweight <- read.table(paste0(path, '/03_Diversity/Beta/Beta_div/unweighted_unifrac/Group_Distances.txt'), sep = '\t', fill = T)
+distance_weight <- read.table(paste0(path, '/03_Diversity/Beta/Beta_div/weighted_unifrac/Group_Distances.txt'), sep = '\t', fill = T)
 
 boxplot_func <- function(data, index) {
     group <- c()

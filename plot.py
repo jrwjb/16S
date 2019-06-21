@@ -56,12 +56,12 @@ def beta(path):
 
 def main():
     path = sys.argv[1].rstrip('/')
-    # heatmap(path)
-    # venn(path)
-    # barplot(path)
+    heatmap(path)
+    venn(path)
+    barplot(path)
     krona_tree(path)
-    # alpha(path)
-    # beta(path)
+    alpha(path)
+    beta(path)
 
 
 if __name__=='__main__':
