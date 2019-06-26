@@ -14,8 +14,9 @@ from tax import tax
 
 
 class Pipeline(object):
-    def __init__(self, project):
+    def __init__(self, project, db):
         self.project = project
+        self.db = db
 
     def if_exists(self, path):
         if not os.path.exists(path):
@@ -159,16 +160,16 @@ class Pipeline(object):
     def annotation(self):
         # # 分类
         # Greengene base(默认)
-        print('Tax with Greengenes...')
-        os.system('assign_taxonomy.py -i {}/02_OTU/otus.fa \
-        -m rdp -c 0.8 -o {}/02_OTU'.format(self.project, self.project))
-
-        # Silva base
-        # print('开始注释(使用silva数据库)...')
-        # os.system(f('assign_taxonomy.py -i {self.project}/OTU/otus.fa \
-        #         -r /home/jbwang/refedata/SILVA_132_QIIME_release/rep_set/rep_set_16S_only/97/silva_132_97_16S.fna \
-        #         -t /home/jbwang/refedata/SILVA_132_QIIME_release/taxonomy/16S_only/97/taxonomy_7_levels.txt \
-        #         -m rdp -c 0.8 -o {self.project}/OTU --rdp_max_memory 40000'))
+        if self.db == 'g':
+        	print('Tax with Greengenes database...')
+        	os.system('assign_taxonomy.py -i {}/02_OTU/otus.fa \
+		    -m rdp -c 0.8 -o {}/02_OTU'.format(self.project, self.project))
+        elif self.db == 's':
+        	print('Tax with Silva database...')
+        	os.system(f('assign_taxonomy.py -i {self.project}/02_OTU/otus.fa \
+	                -r /home/jbwang/refedata/SILVA_132_QIIME_release/rep_set/rep_set_16S_only/97/silva_132_97_16S.fna \
+	                -t /home/jbwang/refedata/SILVA_132_QIIME_release/taxonomy/16S_only/97/taxonomy_7_levels.txt \
+	                -m rdp -c 0.8 -o {self.project}/02_OTU --rdp_max_memory 40000'))
 
         # otu_table.txt 转换为 biom 格式
         os.system(f('biom convert -i {self.project}/02_OTU/otu_table.txt \
@@ -325,20 +326,23 @@ class Pipeline(object):
         # self.qiime_qc()
         # self.data_statis()
         # self.otu()
-        # self.annotation()
+        self.annotation()
         # self.build_tree()
-        self.diversity()
-        self.alpha_diversity()
-        self.beta_diversity()
-        self.bak()
-        self.lefse()
+        # self.diversity()
+        # self.alpha_diversity()
+        # self.beta_diversity()
+        # self.bak()
+        # self.lefse()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='16s pipeline')
     parser.add_argument('-i', '--input', help='input the path of project', required=True)
+    parser.add_argument('-db', '--database', help='annotation database', nargs='?', const=1, default='g')  # g为greengenes数据库, s为silva数据库
     args = parser.parse_args()
     project = args.input
+    db = args.database
     project = project.rstrip('/')
-    pipeline = Pipeline(project)
-    # pipeline.main()
-    otu.main(project)
+    pipeline = Pipeline(project, db)
+    pipeline.main()
+    # otu.main(project)
+    
