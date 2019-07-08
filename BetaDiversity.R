@@ -6,6 +6,7 @@ library(ropls)
 library(stringr)
 library(car)
 library(reshape2)
+library(agricolae)
 library(RColorBrewer)
 
 args <- commandArgs(T)
@@ -227,7 +228,31 @@ boxplot_func <- function(data, index) {
     colnames(data)[1] <- 'Group'
     data2 <- melt(data, id.vars = c('Group'))
 
-    p <- ggplot(as.data.frame(data2), aes(Group, value, color = Group)) +
+    # 统计检验
+    if (norw(data) == 2){
+    	groupvs <- paste(data$Group, collapse = '_vs_')
+    	ttest <- t.test(value ~ Group, data2)  # 假设俩个变量方差不齐
+        p_value <- ttest$p.value
+        ttest_result <- data.frame(groupvs, p_value)
+        write.table(ttest_result, file=paste0(path, '/03_Diversity/Beta/Beta_div/', index, '/ttest.txt'), sep = '\t', row.names = F)
+
+        wilcox <- wilcox.test(value ~ Group, data2)
+        p_value <- wilcox$p.value
+        wilcox_result <- data.frame(groupvs, p_value)
+        write.table(wilcox_result, file=paste0(path, '/03_Diversity/Beta/Beta_div/', index, '/wilcox.txt'), sep = '\t', row.names = F)
+    }else{
+    	fit <- aov(value ~ Group, data2)
+        tukey <- TukeyHSD(fit)
+        tukey_result <- tukey$Group
+        write.table(tukey_result, file=paste0(path, '/03_Diversity/Beta/Beta_div/', index, '/tukey.txt'), sep = '\t')
+        ##Kurskal-Wallis检验是Wilcoxon方法（其实是Mann-Whitney检验）用于多个样本。当对两个样本进行比较的时候，Kurskal-Wallis检验与Mann-Whitney检验是等价的。
+        # wilcox <- kruskal.test(x ~ Group, data)
+        wilcox <- kruskal(data2$value, data2$Group, group = F)
+        wilcox_result <- wilcox$comparison
+        write.table(wilcox_result, file=paste0(path, '/03_Diversity/Beta/Beta_div/', index, '/wilcox.txt'), sep = '\t')
+    }
+
+    p <- ggplot(as.data.frame(na.omit(data2)), aes(Group, value, color = Group)) +
           geom_boxplot() +
           theme_bw() +
           theme(panel.grid=element_blank(),axis.line=element_line(size=0.5,colour="black")) +
