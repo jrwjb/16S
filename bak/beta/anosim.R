@@ -5,7 +5,7 @@ args <- commandArgs(T)
 path <- as.character(args[1])
 
 sample_info <- read.table(paste0(path, '/sample_info.txt'), row.names = 1, header = T, sep = '\t')
-otu_table <- read.table(paste0(path, '/03_Diversity/otu_table_even.txt'), row.names = 1, header = T, sep = '\t')
+otu_table <- read.table(paste0(path, '/03_Diversity/otu_table_even.txt'), row.names = 1, header = T, sep = '\t', check.names = F)
 otu_table <- otu_table[, rownames(sample_info)]
 
 

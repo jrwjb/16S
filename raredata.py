@@ -5,7 +5,7 @@ from ww import f
 def redo_data(path, file):
     def sample_info(path):
         df = pd.read_csv(path + '/sample_info.txt', sep='\t')
-        sample_info_dict = {i:j for i,j in zip(df['SampleID'], df['Group'])}
+        sample_info_dict = {str(i):str(j) for i,j in zip(df['SampleID'], df['Group'])}
         return sample_info_dict
 
     index = re.split(r'[/.]', file)[-2]

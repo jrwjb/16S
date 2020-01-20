@@ -8,16 +8,16 @@ from generateFile import generate_file
 def heatmap(path):
     for file in glob.glob(path + '/02_OTU/taxa_heatmap/*/*.csv'):
         if re.search(r'group', file, re.I):
-            os.system(f('Rscript /home/jbwang/code/heatmap_group.R {path}/sample_info.txt {file}'))
+            os.system(f('Rscript /home/jbwang/code/otu/heatmap_group.R {path}/sample_info.txt {file}'))
         else:
-            os.system(f('Rscript /home/jbwang/code/heatmap.R {path}/sample_info.txt {file}'))
+            os.system(f('Rscript /home/jbwang/code/otu/heatmap.R {path}/sample_info.txt {file}'))
 
 def venn(path):
-    os.system(f('Rscript /home/jbwang/code/venn.R {path}'))
+    os.system(f('Rscript /home/jbwang/code/otu/venn.R {path}'))
 
 def barplot(path):
     for file in glob.glob(path + '/02_OTU/Top10*/*/*.csv'):
-        os.system(f('Rscript /home/jbwang/code/top10_barplot.R {file}'))
+        os.system(f('Rscript /home/jbwang/code/otu/top10_barplot.R {file}'))
 
 def krona_tree(path):
     generate_file(path)
@@ -27,20 +27,21 @@ def krona_tree(path):
     os.system(f('ktImportText {krona_file} -o {path}/02_OTU/krona/krona.html'))
 
     # os.system(f"sed -i 's/d_/k_/g;s/;/; /g' {path}/data/{groupvs}/01.OTU_Taxa/original/otu_taxa_table.xls")
-    os.system(f('python3 /home/jbwang/code/level_tree_sample.py \
+    os.system(f('python3 /home/jbwang/code/otu/level_tree_sample.py \
                 -f {path}/02_OTU/otu_table_tax.txt \
                 -t 10 -o {path}/02_OTU/taxa_tree/sample_tree'))
 
-    os.system(f('python3 /home/jbwang/code/level_tree.py \
+    os.system(f('python3 /home/jbwang/code/otu/level_tree.py \
                 -f {path}/02_OTU/otu_table_tax.txt \
                 -t 10 \
                 -g {path}/02_OTU/taxa_tree/group.txt \
                 -o {path}/02_OTU/taxa_tree'))
 
 def alpha(path):
-    os.system(f('Rscript /home/jbwang/code/AlphaDiversity.R {path}'))
-    for file in glob.glob(path + '/03_Diversity/Alpha/alpha_div_collated/*_T.txt'):
-        os.system(f('Rscript /home/jbwang/code/rareplot.R {path} {file}'))
+    os.system(f('Rscript /home/jbwang/code/alpha/AlphaDiversity.R {path}'))
+    os.system(f('Rscript /home/jbwang/code/alpha/rareplot2.R {path}'))
+    # for file in glob.glob(path + '/03_Diversity/Alpha/alpha_div_collated/*_T.txt'):
+    #     os.system(f('Rscript /home/jbwang/code/alpha/rareplot.R {path} {file}'))
 
 def beta(path):
     pcoa = f('{path}/03_Diversity/Beta/PCoA')
@@ -50,21 +51,22 @@ def beta(path):
     os.system(f('mkdir {tree_barplot}/unweighted_unifrac'))
     os.system(f('cp {path}/03_Diversity/Beta/weighted_unifrac_dm.txt {tree_barplot}/weighted_unifrac'))
     os.system(f('cp {path}/03_Diversity/Beta/unweighted_unifrac_dm.txt {tree_barplot}/unweighted_unifrac'))
-    os.system(f('Rscript /home/jbwang/code/BetaDiversity.R {path}'))
+    os.system(f('Rscript /home/jbwang/code/beta/BetaDiversity.R {path}'))
     for file in glob.glob(path + '/03_Diversity/Beta/Tree_barplot/*/*_dm.txt'):
-        os.system(f('Rscript /home/jbwang/code/upgma.R {path} {file}'))
+        os.system(f('Rscript /home/jbwang/code/beta/upgma.R {path} {file}'))
 
 def main():
     path = sys.argv[1].rstrip('/')
-    #heatmap(path)
-    #venn(path)
-    #barplot(path)
-    #krona_tree(path)
-    #alpha(path)
+    heatmap(path)
+    venn(path)
+    barplot(path)
+    krona_tree(path)
+    alpha(path)
     beta(path)
-
+    os.system(f('sh /home/jbwang/code/result.sh {path}'))
 
 if __name__=='__main__':
     main()
+    
     
 

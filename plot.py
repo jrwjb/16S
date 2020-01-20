@@ -39,8 +39,9 @@ def krona_tree(path):
 
 def alpha(path):
     os.system(f('Rscript /home/jbwang/code/alpha/AlphaDiversity.R {path}'))
-    for file in glob.glob(path + '/03_Diversity/Alpha/alpha_div_collated/*_T.txt'):
-        os.system(f('Rscript /home/jbwang/code/alpha/rareplot.R {path} {file}'))
+    os.system(f('Rscript /home/jbwang/code/alpha/rareplot2.R {path}'))
+    # for file in glob.glob(path + '/03_Diversity/Alpha/alpha_div_collated/*_T.txt'):
+    #     os.system(f('Rscript /home/jbwang/code/alpha/rareplot.R {path} {file}'))
 
 def beta(path):
     pcoa = f('{path}/03_Diversity/Beta/PCoA')

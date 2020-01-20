@@ -12,6 +12,7 @@ pd.set_option('display.max_rows', None)      # 显示所有行
 def sample_info(path):
     sample_df = pd.read_csv(f('{path}/sample_info.txt'), sep='\t')
     sample = sample_df[['SampleID', 'Group']]
+    sample['SampleID'] = sample['SampleID'].apply(str)
     sample = sample.groupby('Group')
     group = set(sample_df['Group'].tolist())
     return sample, group
@@ -93,7 +94,8 @@ def top10(path, df, index):
     else:
         tax_list.remove(' Others')
         top10 = tax_list[0:10]
-        other = tax_list[10:].append(' Others')
+        other = tax_list[10:]
+        other.append(' Others')
     # 按index取出top10和其他
     top10_df = df.loc[top10].T
     if other:
@@ -140,9 +142,10 @@ def group(path, df1, df2, index, tax_list):
 def write(path, df, index, num):
     # 按分类类别进行分组汇总
     df_group = df.groupby(index).sum()
-    others = pd.DataFrame(df_group.loc[' Others']).T
-    df_group = df_group.drop(' Others')
-    df_group = pd.concat([df_group, others], axis=0)
+    if ' Others' in df_group.index:
+        others = pd.DataFrame(df_group.loc[' Others']).T
+        df_group = df_group.drop(' Others')
+        df_group = pd.concat([df_group, others], axis=0)
     # print(df_group)
     if_exists(f('{path}/02_OTU/Abundance/Absolute'))
     df_group.to_csv(f('{path}/02_OTU/Abundance/Absolute/{index}.csv'))
@@ -180,7 +183,10 @@ def write(path, df, index, num):
     # 聚类热图数据
     if_exists(f('{path}/02_OTU/taxa_heatmap/cluster'))
     if index != 'Species':
-        tax_cluster = tax_df.drop(' Others')
+        if ' Others' in tax_df.index:
+            tax_cluster = tax_df.drop(' Others')
+        else:
+            tax_cluster = tax_df
         # if len(tax_cluster.index) == len(tax_detail):
         #     tax_cluster['tax_detail'] = tax_detail
         tax_cluster.to_csv(f('{path}/02_OTU/taxa_heatmap/cluster/{index}.csv'))
@@ -195,7 +201,8 @@ def write(path, df, index, num):
     else:
         tax_list.remove(' Others')
         top10 = tax_list[0:10]
-        other = tax_list[10:].append(' Others')
+        other = tax_list[10:]
+        other.append(' Others')
     # 按index取出top10和其他
     top10_df = df_group.loc[top10].T
     if other:

@@ -1,7 +1,7 @@
-library(phangorn)
-library(ggtree)
-library(vegan)
-library(phytools)
+suppressMessages(library(phangorn))
+suppressMessages(library(ggtree))
+suppressMessages(library(vegan))
+suppressMessages(library(phytools))
 library(RColorBrewer)
 
 args <- commandArgs(T)
@@ -10,7 +10,7 @@ file <- as.character(args[2])
 out <- sapply(strsplit(file, '\\.'), '[', 1)
 
 ## 距离矩阵（由qiime软件生成)
-dm <- read.table(file, row.names = 1, header = T, sep = '\t')
+dm <- read.table(file, row.names = 1, header = T, sep = '\t', check.names = F)
 
 ###方法一
 #### 使用距离矩阵生成树文件并作图

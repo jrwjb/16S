@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 from ww import f
 
@@ -22,4 +23,5 @@ def generate_file(path):
         data = pd.concat([data, tax_df], axis=1)
         data.to_csv(f('{path}/02_OTU/krona/file_list/{i}.txt'), index=False, header=False, sep='\t')
 
-
+path = sys.argv[1]
+generate_file(path)

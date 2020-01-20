@@ -31,12 +31,15 @@ class Pipeline(object):
         print('FLASH...')
         self.if_exists(self.project + '/00_RawData/ExtendData')
 
-        fq1_list = sorted([file for file in os.listdir(self.project + '/00_RawData/') if re.search(r'_?R?1.f(ast)?q.gz', file)])
-        fq2_list = sorted([file for file in os.listdir(self.project + '/00_RawData/') if re.search(r'_?R?2.f(ast)?q.gz', file)])
+        fq1_list = sorted([file for file in os.listdir(self.project + '/00_RawData/') if re.search(r'_?R?1.f(ast)?q.?(gz)?', file)])
+        fq2_list = sorted([file for file in os.listdir(self.project + '/00_RawData/') if re.search(r'_?R?2.f(ast)?q.?(gz)?', file)])
+
 
         for fq1, fq2 in zip(fq1_list, fq2_list):
-            sample = ''.join([i for i in self.sample_id() if i in fq1])
-            os.system(f('/home/jbwang/soft/FLASH-1.2.11/flash {fq1} {fq2} \
+            #sample = ''.join([i for i in self.sample_id() if i in fq1])
+            sample = fq1.split('_')[-2]
+            #print(sample)
+            os.system(f('/home/jbwang/soft/FLASH-1.2.11/flash {self.project}/00_RawData/{fq1} {self.project}/00_RawData/{fq2} \
                         -d {self.project}/00_RawData/ExtendData -o {sample} -x 0.1 -M 150 -t 16 -z'))
 
         print('FLASH Done')
@@ -48,7 +51,8 @@ class Pipeline(object):
         self.if_exists(self.project + '/tmp')
         for file in glob.glob(self.project + '/00_RawData/ExtendData/*.extendedFrags.fastq.gz'):
             # id_match = re.search(file.split('/')[-1].split('.')[0], self.sample_id()).group()
-            id_match = file.split('/')[-1].split('.')[0]
+            #id_match = '.'.join(file.split('/')[-1].split('.')[:3])
+            id_match = '.'.join(file.split('/')[-1].split('.')[0:2])
             os.system(f('split_libraries_fastq.py  \
                         -i {file} --sample_ids {id_match} \
                         -o {self.project}/00_RawData/TrimQC/{id_match} \
@@ -56,7 +60,7 @@ class Pipeline(object):
                         --min_per_read_length_fraction 0.75 \
                         --max_barcode_errors 0 \
                         --store_demultiplexed_fastq \
-                        --barcode_type not-barcoded'))
+                        --barcode_type not-barcoded --phred_offset 33'))
             os.system(f('mv {self.project}/00_RawData/TrimQC/{id_match}/seqs.fna \
                             {self.project}/00_RawData/TrimQC/{id_match}/{id_match}.fa'))
             os.system(f('mv {self.project}/00_RawData/TrimQC/{id_match}/seqs.fastq \
@@ -100,7 +104,8 @@ class Pipeline(object):
         # 获取fastq文件
         rawPath = self.project + '/00_RawData'
         cleanPath = self.project + '/01_CleanData'
-        rawFile_list = sorted([file for file in os.listdir(rawPath) if re.search(r'_?R?1.f(ast)?q.gz', file)])
+        # rawFile_list = sorted([self.project + '/00_RawData/ExtendData/' + file for file in os.listdir(rawPath) if re.search(r'extendedFrags.f(ast)?q.?(gz)?', file)])
+        rawFile_list = sorted([self.project + '/00_RawData/' + file for file in os.listdir(rawPath) if re.search(r'_?R?1.f(ast)?q.?(gz)?', file)])
         cleanFile_list = sorted([file for file in glob.glob(cleanPath + '/*/*.fq')])
 
         return rawFile_list, cleanFile_list
@@ -130,8 +135,9 @@ class Pipeline(object):
         print('OTU and OTU_table...')
         self.if_exists(self.project + '/02_OTU')
         # 去重复
-        os.system(f('cat {self.project}/01_CleanData/*/*.fa > {self.project}/01_CleanData/all.fa'))
-        os.system(f("sed -i 's/_[0-9]*//2' {self.project}/01_CleanData/all.fa"))
+        # os.system(f('cat {self.project}/01_CleanData/*/*.fa > {self.project}/01_CleanData/all.fa'))
+        # os.system(f("sed -i.bak 's/_[0-9]*//g' {self.project}/01_CleanData/all.fa"))
+        os.system(f("sed -i.bak 's/_[0-9]*//g;s/-/_/g;s/\./_/g' {self.project}/01_CleanData/all.fa"))
         os.system(f('/home/jbwang/soft/Usearch/Usearch11 \
                     -fastx_uniques {self.project}/01_CleanData/all.fa \
                     -sizeout \
@@ -152,6 +158,15 @@ class Pipeline(object):
                             -otutabout {self.project}/02_OTU/otu_table.txt \
                             -strand plus \
                             -id 0.97'))
+
+        os.system(f('biom convert -i {self.project}/02_OTU/otu_table.txt \
+                    -o {self.project}/02_OTU/otu_table.biom \
+                    --table-type="OTU table" \
+                    --to-json'))
+
+        os.system(f('biom summarize-table -i {self.project}/02_OTU/otu_table.biom \
+                    -o {self.project}/02_OTU/biom_table_summary.txt'))
+
         print('OTU Done')
 
 
@@ -159,21 +174,21 @@ class Pipeline(object):
         # # 分类
         # Greengene base(默认)
         if self.db == 'g':
-        	print('Tax with Greengenes database...')
-        	os.system('assign_taxonomy.py -i {}/02_OTU/otus.fa \
-		    -m rdp -c 0.8 -o {}/02_OTU'.format(self.project, self.project))
+            print('Tax with Greengenes database...')
+            os.system('assign_taxonomy.py -i {}/02_OTU/otus.fa \
+            -m rdp -c 0.8 -o {}/02_OTU'.format(self.project, self.project))
         elif self.db == 's':
-        	print('Tax with Silva database...')
-        	os.system(f('assign_taxonomy.py -i {self.project}/02_OTU/otus.fa \
-	                -r /home/jbwang/refedata/SILVA_132_QIIME_release/rep_set/rep_set_16S_only/97/silva_132_97_16S.fna \
-	                -t /home/jbwang/refedata/SILVA_132_QIIME_release/taxonomy/16S_only/97/taxonomy_7_levels.txt \
-	                -m rdp -c 0.8 -o {self.project}/02_OTU --rdp_max_memory 40000'))
+            print('Tax with Silva database...')
+            os.system(f('assign_taxonomy.py -i {self.project}/02_OTU/otus.fa \
+                    -r /home/jbwang/refedata/SILVA_132_QIIME_release/rep_set/rep_set_16S_only/97/silva_132_97_16S.fna \
+                    -t /home/jbwang/refedata/SILVA_132_QIIME_release/taxonomy/16S_only/97/taxonomy_7_levels.txt \
+                    -m rdp -c 0.8 -o {self.project}/02_OTU --rdp_max_memory 40000'))
 
         # otu_table.txt 转换为 biom 格式
-        os.system(f('biom convert -i {self.project}/02_OTU/otu_table.txt \
-                    -o {self.project}/02_OTU/otu_table.biom \
-                    --table-type="OTU table" \
-                    --to-json'))
+        # os.system(f('biom convert -i {self.project}/02_OTU/otu_table.txt \
+        #             -o {self.project}/02_OTU/otu_table.biom \
+        #             --table-type="OTU table" \
+        #             --to-json'))
 
         # # 添加物种信息至OTU表最后一列，命名为taxonomy
         os.system(f('biom add-metadata -i {self.project}/02_OTU/otu_table.biom \
@@ -223,7 +238,7 @@ class Pipeline(object):
 
     def seqs_min(self):
         # 获取最小数据量
-        with open(f('{self.project}/02_OTU/otu_table_tax.sum')) as f1:
+        with open(f('{self.project}/02_OTU/biom_table_summary.txt')) as f1:
             txt = f1.read()
             s = re.search('Min:.*', txt).group().split(':')[1].split('.')[0]
             min_num = int(''.join(s.split(',')))
@@ -256,15 +271,15 @@ class Pipeline(object):
         os.system(f('mv {self.project}/03_Diversity/table_even{self.seqs_min()}.biom {self.project}/03_Diversity/otu_table_even.biom'))
 
         os.system(f('alpha_diversity.py \
-                    -i {self.project}/03_Diversity/otu_table_even.biom \
+                    -i {self.project}/02_OTU/otu_table_tax.biom \
                     -o {self.project}/03_Diversity/Alpha/alpha_diversity_index.txt \
                     -t {self.project}/02_OTU/otus.tre \
                     -m shannon,simpson,ace,goods_coverage,chao1,observed_species,PD_whole_tree'))
 
-        # 生成R所需文件
-        for file in os.listdir(f('{self.project}/03_Diversity/Alpha/alpha_div_collated')):
-            newfile = f('{self.project}/03_Diversity/Alpha/alpha_div_collated/{file}')
-            redo_data(self.project, newfile)
+        # # 生成R所需文件
+        # for file in os.listdir(f('{self.project}/03_Diversity/Alpha/alpha_div_collated')):
+        #     newfile = f('{self.project}/03_Diversity/Alpha/alpha_div_collated/{file}')
+        #     redo_data(self.project, newfile)
 
     def beta_diversity(self):
         # 计算贝塔多样性距离指数
@@ -300,43 +315,46 @@ class Pipeline(object):
 
         ## 获取比较组
         sample_info = pd.read_csv(f('{self.project}/sample_info.txt'), sep='\t')
-        groups = set(sample_info['Group'].tolist())
-        groupvs_list = combinations(groups, 2)
+        with open(f('{self.project}/groupvs.txt')) as fg:
+            groupvs_list = [i.strip() for i in fg]
+        # groups = set(sample_info['Group'].tolist())
+        # groupvs_list = combinations(groups, 2)
         
         for file in glob.glob(f('{self.project}/03_Diversity/Beta/lefse/tmp/*.txt')):
             if re.search('L6', file):
-            	## 对所有组分析
-            	os.system(f("awk -F'\t' '{{$2=null;$3=null;$5=null;print $0}}' {file} > {self.project}/03_Diversity/Beta/lefse/L6.txt"))   #### 删除不必要的列
-            	os.system(f("sed -i 's/\s\+/\t/g' {self.project}/03_Diversity/Beta/lefse/L6.txt"))    ### 替换连续空格为tab
-            	os.system(f('lefse-format_input.py {self.project}/03_Diversity/Beta/lefse/L6.txt \
-                			{self.project}/03_Diversity/Beta/lefse/L6.in -f c -c 2 -s -1 -u 1 -o 1000000'))
-            	os.system(f('run_lefse.py {self.project}/03_Diversity/Beta/lefse/L6.in \
-                			{self.project}/03_Diversity/Beta/lefse/L6.res -l 2'))
-            	os.system(f('lefse-plot_res.py {self.project}/03_Diversity/Beta/lefse/L6.res \
-                			{self.project}/03_Diversity/Beta/lefse/L6.png --dpi 600'))
-            	os.system(f('lefse-plot_cladogram.py {self.project}/03_Diversity/Beta/lefse/L6.res \
-                			{self.project}/03_Diversity/Beta/lefse/L6.cla.png --format png --dpi 600'))
-            	## 对每个比较组分析
-            	L6 = pd.read_csv(file, index_col=0, sep='\t')
-            	for groupvs in groupvs_list:
-                    tmp_groupvs = '_vs_'.join(groupvs)
-                    self.if_exists(f('{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}'))
-                    tmp_L6 = L6[L6['Group'].isin(list(groupvs))]
-                    tmp_file = f('{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}_L6.txt')
+                ## 对所有组分析
+                os.system(f("awk -F'\t' '{{$2=null;$3=null;$4=null;$6=null;print $0}}' {file} > {self.project}/03_Diversity/Beta/lefse/L6.txt"))   #### 删除不必要的列
+                os.system(f("sed -i 's/\s\+/\t/g' {self.project}/03_Diversity/Beta/lefse/L6.txt"))    ### 替换连续空格为tab
+                os.system(f('lefse-format_input.py {self.project}/03_Diversity/Beta/lefse/L6.txt \
+                            {self.project}/03_Diversity/Beta/lefse/L6.in -f c -c 2 -s -1 -u 1 -o 1000000'))
+                os.system(f('run_lefse.py {self.project}/03_Diversity/Beta/lefse/L6.in \
+                            {self.project}/03_Diversity/Beta/lefse/L6.res -l 2'))
+                os.system(f('lefse-plot_res.py {self.project}/03_Diversity/Beta/lefse/L6.res \
+                            {self.project}/03_Diversity/Beta/lefse/L6.png --dpi 600'))
+                os.system(f('lefse-plot_cladogram.py {self.project}/03_Diversity/Beta/lefse/L6.res \
+                            {self.project}/03_Diversity/Beta/lefse/L6.cla.png --format png --dpi 600'))
+                os.system(f('lefse-plot_features.py -f diff --archive zip {self.project}/03_Diversity/Beta/lefse/L6.in \
+                            {self.project}/03_Diversity/Beta/lefse/L6.res {self.project}/03_Diversity/Beta/lefse/biomarkers.zip'))
+                ## 对每个比较组分析
+                L6 = pd.read_csv(file, index_col=0, sep='\t')
+                for groupvs in groupvs_list:
+                    self.if_exists(f('{self.project}/03_Diversity/Beta/lefse/{groupvs}'))
+                    tmp_L6 = L6[L6['Group'].isin(groupvs.split('_vs_'))]
+                    tmp_file = f('{self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}_L6.txt')
                     tmp_L6.to_csv(tmp_file, sep='\t')
-                    out = f('{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.txt')
+                    out = f('{self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.txt')
                     os.system(f("awk -F'\t' '{{$2=null;$3=null;$5=null;print $0}}' {tmp_file} > {out}"))   #### 删除不必要的列
                     os.system(f("sed -i 's/\s\+/\t/g' {out}"))    ### 替换连续空格为tab
-                    os.system(f('lefse-format_input.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.txt \
-                    			{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.in -f c -c 2 -s -1 -u 1 -o 1000000'))
-                    os.system(f('run_lefse.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.in \
-                    			{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res -l 2'))
-                    os.system(f('lefse-plot_res.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res \
-                    			{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.png --dpi 600'))
-                    os.system(f('lefse-plot_cladogram.py {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res \
-                    			{self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.cla.png --format png --dpi 600'))
-                    os.system(f('lefse-plot_features.py -f diff --archive zip {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.in \
-                                {self.project}/03_Diversity/Beta/lefse/{tmp_groupvs}/{tmp_groupvs}.res biomarkers.zip'))
+                    os.system(f('lefse-format_input.py {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.txt \
+                                {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.in -f c -c 2 -s -1 -u 1 -o 1000000'))
+                    os.system(f('run_lefse.py {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.in \
+                                {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.res -l 2'))
+                    os.system(f('lefse-plot_res.py {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.res \
+                                {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.png --dpi 600'))
+                    os.system(f('lefse-plot_cladogram.py {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.res \
+                                {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.cla.png --format png --dpi 600'))
+                    os.system(f('lefse-plot_features.py -f diff --archive zip {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.in \
+                                {self.project}/03_Diversity/Beta/lefse/{groupvs}/{groupvs}.res {self.project}/03_Diversity/Beta/lefse/{groupvs}/biomarkers.zip'))
 
 
 
@@ -344,14 +362,14 @@ class Pipeline(object):
         # self.flash()
         # self.qiime_qc()
         # self.data_statis()
-        # self.otu()
-        # self.annotation()
+        self.otu()
+        self.annotation()
         self.build_tree()
         self.diversity()
-        # self.alpha_diversity()
-        # self.beta_diversity()
-        # self.bak()
-        # self.lefse()
+        self.alpha_diversity()
+        self.beta_diversity()
+        self.bak()
+        self.lefse()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='16s pipeline')
@@ -363,5 +381,6 @@ if __name__ == '__main__':
     project = project.rstrip('/')
     pipeline = Pipeline(project, db)
     pipeline.main()
-    # otu.main(project)
+    otu.main(project)
+    os.system(f('sh /home/jbwang/code/picrust/picrust.sh {project}'))
     
