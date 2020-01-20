@@ -78,12 +78,12 @@ venn_func <- function(otu_table, sample_info, out){
     flower_data <- c()
     group_data <- c()
     for (i in 1:ll){
-        is_uniq <- (d1 == 1 & tb1[i, 1] == 1)
+        # is_uniq <- (d1 == 1 & tb1[i, 1] == 1)
         # flower_data[i] <- sum(is_uniq)
         flower_data[i] <- sum(tb1[i,])
         group_data[i] <- rownames(tb1)[i]
-        uniq_spe <- data.frame(OTUID = colnames(tb1)[is_uniq], taxonomy = tax[is_uniq], Sum_Abundance = sum[is_uniq])
-        write.table(uniq_spe, paste0(out,'/', unig[i],'.csv'), row.names = F, sep = ',')
+        uniq_spe <- data.frame(OTUID = colnames(tb1)[d1 == 1 & tb1[i,] == 1], taxonomy = tax[d1 == 1 & tb1[i,] == 1], Sum_Abundance = sum[d1 == 1 & tb1[i,] == 1])
+        write.table(uniq_spe, paste0(out,'/', 'group_', unig[i],'.csv'), row.names = F, sep = ',')
     }
     
     if (length(unig) <= 5){
