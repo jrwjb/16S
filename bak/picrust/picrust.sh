@@ -2,15 +2,17 @@
 
 set -e;  # 出现错误立即退出
 
-path=$1
-path=${path%/}     #  '%' 从后向前删除, '#' 从前向后删除
+project=$1
+project=${project%/}     #  '%' 从后向前删除, '#' 从前向后删除
 
-mkdir -p $path/04_Picrust
-cp $path/*.txt $path/04_Picrust
-cd $path/04_Picrust
+source activate qiime1
+ori_path=$(pwd)
+mkdir -p ${project}/04_Picrust
+cp ${project}/*.txt ${project}/04_Picrust
 
 # 默认按照gg138版本pick otu
 predict(){
+	cd ${project}/04_Picrust
 	pick_closed_reference_otus.py -i ../01_CleanData/all.fa.bak -o out -f && \
 	biom convert -i out/otu_table.biom -o out/otu_table_tax.txt --table-type="OTU table" --header-key taxonomy --to-tsv
 	# 标准化otu_table
@@ -30,6 +32,7 @@ predict(){
 
 	categorize_by_function.py -i COG/cog_prediction.biom -o ./COG/cog_predicted_L2.biom -c COG_Category -l 2
 	categorize_by_function.py -i COG/cog_prediction.biom -o ./COG/cog_predicted_L1.biom -c COG_Category -l 1
+	cd ori_path
 }
 
 if [ ! -e ${project}/predict.success ];then
@@ -42,8 +45,9 @@ if [ ! -e ${project}/predict.success ];then
 	fi
 fi
 
+cd ${project}/04_Picrust
 #biom=${i##*/}    #返回 / 后的字符
-for i in `ls ./*/*.biom`
+for i in $(ls ./*/*.biom)
 do
 	sh /home/jbwang/code/picrust/biom2txt.sh $i
 done

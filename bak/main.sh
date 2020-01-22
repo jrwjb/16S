@@ -43,7 +43,7 @@ done
 # fi
 
 project=${project%/}   # 去掉斜杠
-echo "输入的路径为：$project"
+# echo "输入的路径为：$project"
 # echo $db
 
 # ================================== #
@@ -55,7 +55,10 @@ echo "输入的路径为：$project"
 #     ((sc==${#sp})) && sc=0
 #     sleep 0.1
 # }
-# ================================== #
+# ====================================================== #
+pre_process(){
+	sed -i.bak 's/_[0-9]*//g;s/-/_/g;s/\./_/g' ${project}/01_CleanData/all.fa
+}
 
 ## ===================== OTU ===========================#
 otu(){
@@ -114,7 +117,7 @@ build_tree(){
 ## ===================== 多样性 ==========================#
 diversity(){
 	printf "\033[32m 多样性分析\033[0m\n"
-	mkdir -p ${project}/02_OTU/03_Diversity
+	[ -d ${project}/03_Diversity ] && rm -rf ${project}/03_Diversity
 	# 添加#到sample_info.txt中
 	sed -i '1s/SampleID/#SampleID/' ${project}/sample_info.txt
 	## -e 参数 最小数据量
@@ -124,6 +127,7 @@ diversity(){
 	sed -i '1s/#//' ${project}/sample_info.txt
 
 	# 计算常用的Alpha多样性指数
+	min=${min# }   ## 删除空格(莫名出现的空格o(╥﹏╥)o)
 	mv ${project}/03_Diversity/arare_max${min} ${project}/03_Diversity/Alpha
 	mv ${project}/03_Diversity/bdiv_even${min} ${project}/03_Diversity/Beta
 	gzip -d ${project}/03_Diversity/table_even${min}.biom.gz
@@ -151,28 +155,36 @@ lefse(){
 	sed -i 's/#//' ${project}/sample_info.txt
 	sed -i 's/#*//' ${project}/03_Diversity/Beta/lefse/tmp/*.txt
 	python3 /home/jbwang/code/pre_lefse.py ${project}   ## lefse分析前预处理
-	ori_path=$(pwd)
-	cd ${project}/03_Diversity/Beta/lefse
-	for vs in $(ls -d */ |grep vs)
+	for vs in $(ls ${project}/03_Diversity/Beta/lefse |grep vs)
 	do
-		vs=${vs%/}
-		L6=${vs}/L6.txt
-		out=${vs}/${vs}
-		awk -F'\t' '{{$2=null;$3=null;$5=null;print $0}}' ${L6} > ${out}.txt   ## 删除不必要的列
-		sed -i 's/\s\+/\t/g' ${out}.txt   # 替换连续空格为tab
-		lefse-format_input.py ${out}.txt ${out}.in -f c -c 2 -s -1 -u 1 -o 1000000
-		run_lefse.py ${out}.in ${out}.res -l 2 > /dev/null
-		lefse-plot_res.py ${out}.res ${out}.png --dpi 600 > /dev/null
-		lefse-plot_cladogram.py ${out}.res ${out}.cla.png --format png --dpi 600 > /dev/null
-		lefse-plot_features.py -f diff --archive zip ${out}.in ${out}.res ${vs}/biomarkers.zip > /dev/null
+		# vs=${vs##*/}   # 返回斜杠最后的字符
+		L6=${project}/03_Diversity/Beta/lefse/${vs}/L6.txt
+		out=${project}/03_Diversity/Beta/lefse/${vs}
+		awk -F'\t' '{{$2=null;$3=null;$5=null;print $0}}' ${L6} > ${out}/${vs}.txt   ## 删除不必要的列
+		sed -i 's/\s\+/\t/g' ${out}/${vs}.txt   # 替换连续空格为tab
+		lefse-format_input.py ${out}/${vs}.txt ${out}/${vs}.in -f c -c 2 -s -1 -u 1 -o 1000000
+		run_lefse.py ${out}/${vs}.in ${out}/${vs}.res -l 2 > /dev/null
+		lefse-plot_res.py ${out}/${vs}.res ${out}/${vs}.png --dpi 600 > /dev/null
+		lefse-plot_cladogram.py ${out}/${vs}.res ${out}/${vs}.cla.png --format png --dpi 600 > /dev/null
+		lefse-plot_features.py -f diff --archive zip ${out}/${vs}.in ${out}/${vs}.res ${out}/biomarkers.zip > /dev/null
 	done
-	cd ${ori_path}
 	printf "\033[32m LefSe分析完成\033[0m\n"
 }
 
 
 ## ================================================== #
 source activate qiime1  ## 激活工作环境
+
+## pre process
+if [ ! -e ${project}/pre_process.success ];then
+	pre_process
+	if [ "$?" -ne 0 ]; then
+		printf "\033[31m Error: pre_process is failed and exit, please try it again !!! \033[0m\n"
+		exit 1
+	else
+		touch ${project}/pre_process.success
+	fi
+fi
 
 ## otu
 if [ ! -e ${project}/otu.success ];then
@@ -187,9 +199,9 @@ fi
 
 ## check
 min=$(grep "Min" ${project}/02_OTU/biom_table_summary.txt|cut -f2 -d ":")
-echo $min
 min=${min//,/} ## 替换所有的逗号
 min=${min%.000} # 去掉末尾的0
+printf "\033[32m 最小测序深度为:$min\033[0m\n"
 # minTF=$(echo $min|awk '{if ($0 < 30000) print "True";else print "False"}')
 # if [ "$minTF" = "True" ];then
 if [ $min -lt 30000 ];then

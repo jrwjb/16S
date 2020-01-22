@@ -57,7 +57,19 @@ echo "输入的路径为：$project"
 # ================ 主程序 ================== #
 source activate qiime1  ## 激活工作环境
 
-sed -i.bak 's/_[0-9]*//g;s/-/_/g;s/\./_/g' ${project}/01_CleanData/all.fa
+pre_process(){
+	sed -i.bak 's/_[0-9]*//g;s/-/_/g;s/\./_/g' ${project}/01_CleanData/all.fa
+}
+
+if [ ! -e ${project}/pre_process.success ];then
+	pre_process
+	if [ "$?" -ne 0 ]; then
+		printf "\033[31m Error: pre_process is failed and exit, please try it again !!! \033[0m\n"
+		exit 1
+	else
+		touch ${project}/pre_process.success
+	fi
+fi
 
 if [ ! -e ${project}/main.success ];then
 	bash /home/jbwang/code/main.sh -p $project -db $db &
@@ -71,7 +83,16 @@ if [ ! -e ${project}/main.success ];then
 	fi
 fi
 
-python3 /home/jbwang/code/otu.py $project  ## 画图前处理数据
+## 画图前备份处理数据
+biom convert -i ${project}/03_Diversity/otu_table_even.biom -o ${project}/03_Diversity/otu_table_even.txt --table-type="OTU table" --to-tsv
+biom convert -i ${project}/03_Diversity/otu_table_even.biom -o ${project}/03_Diversity/otu_table_even_tax.txt --table-type="OTU table" --header-key taxonomy --to-tsv
+sed -i.bak 's/#//' ${project}/02_OTU/otu_table.txt
+sed -i.bak '/# Const/d;s/#//' ${project}/02_OTU/otu_table_tax.txt     
+sed -i.bak '/# Const/d;s/#//g' ${project}/03_Diversity/otu_table_even.txt
+sed -i.bak '/# Const/d;s/#//' ${project}/03_Diversity/otu_table_even_tax.txt
+
+python3 /home/jbwang/code/tax.py $project
+python3 /home/jbwang/code/otu.py $project
 
 source deactivate qiime1  ## 关闭工作环境
 ## ================ 绘图 ===============#

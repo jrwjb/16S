@@ -17,3 +17,6 @@ def tax(path):
                     f2.write(newline + '\n')
                 if len(tax) > 7:
                     print(line)
+
+path = sys.argv[1].rstrip('/')
+tax(path)
