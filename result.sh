@@ -2,6 +2,8 @@
 
 project=$1
 project=${project%/}
+[ $project = "." ] && project=$(pwd)
+
 cd $project
 
 if [ -d "Result" ]; then

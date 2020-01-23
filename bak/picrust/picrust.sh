@@ -4,6 +4,7 @@ set -e;  # 出现错误立即退出
 
 project=$1
 project=${project%/}     #  '%' 从后向前删除, '#' 从前向后删除
+[ $project = "." ] && project=$(pwd)
 
 source activate qiime1
 ori_path=$(pwd)
@@ -32,7 +33,7 @@ predict(){
 
 	categorize_by_function.py -i COG/cog_prediction.biom -o ./COG/cog_predicted_L2.biom -c COG_Category -l 2
 	categorize_by_function.py -i COG/cog_prediction.biom -o ./COG/cog_predicted_L1.biom -c COG_Category -l 1
-	cd ori_path
+	cd $ori_path
 }
 
 if [ ! -e ${project}/predict.success ];then

@@ -103,6 +103,7 @@ venn_func <- function(otu_table, sample_info, out){
 
 num <- length(unique(sample_info$Group))
 if (num == 2){
+    out <- paste0(out, '/', groupVs[1,1])
     venn_func(otu_table, sample_info, out)
 }else{
     venn_func(otu_table, sample_info, out)

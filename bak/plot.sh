@@ -4,6 +4,7 @@ set -e;  # 出现错误立即退出
 
 project=$1
 project=${project%/}     #  '%' 从后向前删除, '#' 从前向后删除
+[ $project = "." ] && project=$(pwd)
 
 heatmap(){
 	for file in $(ls ${project}/02_OTU/taxa_heatmap/cluster_group/*.csv)

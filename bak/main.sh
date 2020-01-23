@@ -43,6 +43,7 @@ done
 # fi
 
 project=${project%/}   # 去掉斜杠
+[ $project = "." ] && project=$(pwd)
 # echo "输入的路径为：$project"
 # echo $db
 
