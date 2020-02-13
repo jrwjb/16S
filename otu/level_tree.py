@@ -305,7 +305,8 @@ for sp in cin.keys():
 	spsum = 0
 	for grp in gp.keys():
 		spsum += gpclas[grp][sp]
-	for grp in gp.keys():
+	# for grp in gp.keys():
+	for grp in sorted(gp.keys()):
 		spper[sp][grp] = gpclas[grp][sp]/spsum
 		print ('%.3f' % spper[sp][grp],end='\t',file=outfile)
 	print ('',file=outfile)
@@ -317,7 +318,8 @@ for sp in oin.keys():
 	spsum = 0
 	for grp in gp.keys():
 		spsum += gporder[grp][sp]
-	for grp in gp.keys():
+	# for grp in gp.keys():
+	for grp in sorted(gp.keys()):
 		spper[sp][grp] = gporder[grp][sp]/spsum
 		print ('%.3f' % spper[sp][grp],end='\t',file=outfile)
 	print ('',file=outfile)
@@ -329,7 +331,8 @@ for sp in fin.keys():
 	spsum = 0
 	for grp in gp.keys():
 		spsum += gpfamily[grp][sp]
-	for grp in gp.keys():
+	# for grp in gp.keys():
+	for grp in sorted(gp.keys()):
 		spper[sp][grp] = gpfamily[grp][sp]/spsum
 		print ('%.3f' % spper[sp][grp],end='\t',file=outfile)
 	print ('',file=outfile)
@@ -341,7 +344,8 @@ for sp in gin:
 	spsum = 0
 	for grp in gp.keys():
 		spsum += gpgenus[grp][sp]
-	for grp in gp.keys():
+	# for grp in gp.keys():
+	for grp in sorted(gp.keys()):
 		spper[sp][grp] = gpgenus[grp][sp]/spsum
 		print ('%.3f' % spper[sp][grp],end='\t',file=outfile)
 	print ('',file=outfile)
