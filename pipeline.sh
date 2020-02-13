@@ -73,16 +73,13 @@ if [ ! -e ${project}/pre_process.success ];then
 	fi
 fi
 
-if [ ! -e ${project}/main.success ];then
-	bash /home/jbwang/code/main.sh -p $project -db $db &
-	bash /home/jbwang/code/picrust/picrust.sh $project &
-	wait
-	if [ "$?" -ne 0 ]; then
-		printf "\033[31m Error: main programm is failed and exit, please try it again !!! \033[0m\n"
-		exit 1
-	else
-		touch ${project}/main.success
-	fi
+# 主程序及功能预测
+bash /home/jbwang/code/main.sh -p $project -db $db &
+bash /home/jbwang/code/picrust/picrust.sh $project &
+wait
+if [ "$?" -ne 0 ]; then
+	printf "\033[31m Error: main programm is failed and exit, please try it again !!! \033[0m\n"
+	exit 1
 fi
 
 ## 画图前备份处理数据
