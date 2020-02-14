@@ -42,7 +42,7 @@ plot(){
 		sh /home/jbwang/code/picrust/biom2txt.sh $i
 	done
 
-	sed -i '/# Const/d;s/#//;1s/\./_/g' ./*/*.txt
+	sed -i '/# Const/d;s/#//;1s/-/_/g;1s/\./_/g' ./*/*.txt
 	#summarize_taxa.py -i ./kegg/kegg_predicted_L1.biom -o level1 --md_identifier "KEGG_Pathways" --level 1
 
 	mkdir -p KEGG/PCA KEGG/Barplot KEGG/Heatmap KEGG/STAMP KEGG/LEfSe COG/PCA COG/Barplot COG/Heatmap COG/STAMP COG/LEfSe
