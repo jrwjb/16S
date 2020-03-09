@@ -86,7 +86,7 @@ fi
 biom convert -i ${project}/03_Diversity/otu_table_even.biom -o ${project}/03_Diversity/otu_table_even.txt --table-type="OTU table" --to-tsv
 biom convert -i ${project}/03_Diversity/otu_table_even.biom -o ${project}/03_Diversity/otu_table_even_tax.txt --table-type="OTU table" --header-key taxonomy --to-tsv
 sed -i.bak 's/#//' ${project}/02_OTU/otu_table.txt
-sed -i.bak '/# Const/d;s/#//' ${project}/02_OTU/otu_table_tax.txt     
+sed -i.bak '/# Const/d;s/#//' ${project}/02_OTU/otu_table_tax.txt
 sed -i.bak '/# Const/d;s/#//g' ${project}/03_Diversity/otu_table_even.txt
 sed -i.bak '/# Const/d;s/#//' ${project}/03_Diversity/otu_table_even_tax.txt
 
