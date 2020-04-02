@@ -12,7 +12,7 @@ fi
 
 ##### QC #####
 mkdir -p Result/01_QC
-# cp QcStatic.csv /Result/01_QC
+cp QcStatic.csv /Result/01_QC
 
 ## ##### OTU ####
 mkdir -p Result/02_OTU_Taxa/Venn
@@ -72,6 +72,8 @@ rm -rf Result/06_Differential_analysis/LefSe/*/*.txt Result/06_Differential_anal
 cp -r 03_Diversity/Beta/PCA/*_vs_* Result/06_Differential_analysis/STAMP
 rm -rf Result/06_Differential_analysis/STAMP/*/*
 cp 02_OTU/Abundance/Relative/Genus.csv Result/06_Differential_analysis/STAMP
+cp 02_OTU/Abundance/Relative/Genus.csv Result/06_Differential_analysis/STAMP/Genus.txt
+sed -i 's/,/\t/g' Result/06_Differential_analysis/STAMP/Genus.txt
 
 #   function prediction
 mkdir -p Result/07_FunctionPrediction
@@ -82,3 +84,7 @@ cp -r 03_Diversity/Beta/PCA/*_vs_* Result/07_FunctionPrediction/COG/STAMP
 rm -rf Result/07_FunctionPrediction/*/*.biom Result/07_FunctionPrediction/*/*/all Result/07_FunctionPrediction/*/*/*.txt Result/07_FunctionPrediction/*/*/*/L3* Result/07_FunctionPrediction/*/*/*/L2.txt Result/07_FunctionPrediction/*/*/*/L2.in Result/07_FunctionPrediction/KEGG/STAMP/*/* Result/07_FunctionPrediction/COG/STAMP/*/*
 sed -i 's/,/;/g;s/\t/,/g' Result/07_FunctionPrediction/*/*.txt
 rename 's/.txt/.csv/' Result/07_FunctionPrediction/*/*.txt
+cp Result/07_FunctionPrediction/KEGG/kegg_predicted_L2.csv Result/07_FunctionPrediction/KEGG/kegg_predicted_L2.txt
+sed -i 's/,/\t/g' Result/07_FunctionPrediction/KEGG/kegg_predicted_L2.txt
+cp Result/07_FunctionPrediction/COG/cog_predicted_L2.csv Result/07_FunctionPrediction/COG/cog_predicted_L2.txt
+sed -i 's/,/\t/g' Result/07_FunctionPrediction/COG/cog_predicted_L2.txt

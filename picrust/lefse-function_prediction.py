@@ -38,17 +38,17 @@ def lefse(type):
                 tmp_file = f('{path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.txt')
                 tmp.to_csv(tmp_file, sep='\t')
                 os.system(f('lefse-format_input.py {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.txt \
-                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.in -f c -c 2 -s -1 -u 1 -o 1000000'))
+                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.in -f c -c 2 -s -1 -u 1 -o 1000000 > /dev/null'))
                 os.system(f('run_lefse.py {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.in \
-                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.res -l 2'))
+                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.res -l 2 > /dev/null'))
                 os.system(f('lefse-plot_res.py {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.res \
-                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.png --dpi 600'))
+                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.png --dpi 600 > /dev/null'))
 
                 ##lefse-plot_res.py L2.res L2.png --dpi 600 --width 20 --left_space 0.5 --feature_font_size 20 #修图参数
                 # os.system(f('lefse-plot_cladogram.py {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.res \
                 #             {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.cla.png --format png --dpi 600'))
                 os.system(f('lefse-plot_features.py -f diff --archive zip {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.in \
-                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.res {path}/04_Picrust/{type}/LEfSe/{groupvs}/biomarkers.zip'))
+                            {path}/04_Picrust/{type}/LEfSe/{groupvs}/{filename}.res {path}/04_Picrust/{type}/LEfSe/{groupvs}/biomarkers.zip > /dev/null'))
 
 
 path = sys.argv[1]

@@ -1,8 +1,9 @@
 # library(ggbiplot)
-library(ropls)
-library(stringr)
-library(dplyr)
-library(car)
+options(warn =-1)
+suppressMessages(library(ropls))
+suppressMessages(library(stringr))
+suppressMessages(library(dplyr))
+suppressMessages(library(car))
 
 args <- commandArgs(T)
 path <- as.character(args[1])

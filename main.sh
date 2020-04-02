@@ -161,7 +161,7 @@ lefse(){
 		# vs=${vs##*/}   # 返回斜杠最后的字符
 		L6=${project}/03_Diversity/Beta/lefse/${vs}/L6.txt
 		out=${project}/03_Diversity/Beta/lefse/${vs}
-		awk -F'\t' '{{$2=null;$3=null;$5=null;print $0}}' ${L6} > ${out}/${vs}.txt   ## 删除不必要的列
+		awk -F'\t' '{{$2=null;$3=null;$4=null;$6=null;print $0}}' ${L6} > ${out}/${vs}.txt   ## 删除不必要的列
 		sed -i 's/\s\+/\t/g' ${out}/${vs}.txt   # 替换连续空格为tab
 		lefse-format_input.py ${out}/${vs}.txt ${out}/${vs}.in -f c -c 2 -s -1 -u 1 -o 1000000
 		run_lefse.py ${out}/${vs}.in ${out}/${vs}.res -l 2 > /dev/null
@@ -207,7 +207,7 @@ printf "\033[32m 最小测序深度为:$min\033[0m\n"
 # if [ "$minTF" = "True" ];then
 if [ $min -lt 30000 ];then
 	printf "\033[33m Warnning:测序最小深度为:$min, 少于三万，请重新测序.\033[0m\n";
-	exit 1;
+	# exit 1;
 fi
 
 ## classify

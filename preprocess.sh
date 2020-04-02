@@ -2,31 +2,46 @@
 
 set -e;
 
+project=$1
+project=${project%/}   # 去掉斜杠
+ori_path=$(pwd)
+[ $project = "." ] && project=$(pwd)
+cd $project
+source activate qiime1
 ## 拆分数据
-for i in $(ls 00_RawData | grep '1.fq.gz')
+forward_primer=$(sed -n '2p' sample_info.txt | cut -f3)
+reverse_primer=$(sed -n '2p' sample_info.txt | cut -f4)
+reverse_primer2=$(echo $reverse_primer | tr 'ATCGRYMKBVDH' 'TAGCYRKMVBHD' | rev) # 取反向互补
+# echo $reverse_primer2
+
+for i in $(ls ${project}/00_RawData/*/* | grep '1.fq.gz')
 do 
+	# echo $i
 	j=${i/1.fq.gz/2.fq.gz}
-	tmp=$(echo $i | cut -d "-" -f1)
-	sample_group=$(echo $i | cut -d "_" -f1)
+	# echo $j
+	fq=${i##*/}
+	tmp=$(echo $fq | cut -d "-" -f1)
+	sample_group=$(echo $fq | cut -d "_" -f1)
 	sample_group=${sample_group/${tmp}-/}
-	# echo $sample_group
+	echo $sample_group
 	mkdir -p 00_RawData/Extend/${sample_group}_split
-	# /home/jbwang/soft/FLASH-1.2.11/flash 00_RawData/$i 00_RawData/$j -d 00_RawData/Extend -o $sample_group -x 0.1 -M 150 -z && \
-	# /home/jbwang/soft/fastq-multx/fastq-multx -m 1 -B ${sample_group}-barcode.txt -b 00_RawData/Extend/${sample_group}.extendedFrags.fastq.gz -o 00_RawData/Extend/${sample_group}_split/%.extendedFrags.fastq.gz
+	/home/jbwang/soft/FLASH-1.2.11/flash $i $j -d 00_RawData/Extend -o $sample_group -x 0.1 -M 150 -z && \
+	/home/jbwang/soft/fastq-multx/fastq-multx -m 1 -B ${sample_group}-barcode.txt -b 00_RawData/Extend/${sample_group}.extendedFrags.fastq.gz -o 00_RawData/Extend/${sample_group}_split/%.extendedFrags.fastq.gz
 	
-	# 去引物
+	# # 去引物
+
 	rm -rf 00_RawData/Extend/${sample_group}_split/unmatched*
 	mkdir -p 00_RawData/Extend/${sample_group}_noprimer/tmp
 
-	# echo 'GACTACHVGGGTATCTAATCC' | tr 'ATCGRYMKBVDH' 'TAGCYRKMVBHD' | rev  碱基转换
-	# for s in $(ls 00_RawData/Extend/${sample_group}_split)
-	# do
-	# 	# echo $s
-	# 	# cutadapt -g CCTACGGGNGGCWGCAG -e 0.15 00_RawData/Extend/${sample_group}_split/$s -o 00_RawData/Extend/${sample_group}_noprimer/tmp/$s && \
-	# 	cutadapt -a GGATTAGATACCCBDGTAGTC -e 0.15 00_RawData/Extend/${sample_group}_noprimer/tmp/$s -o 00_RawData/Extend/${sample_group}_noprimer/$s
-	# done
+	# # echo 'GACTACHVGGGTATCTAATCC' | tr 'ATCGRYMKBVDH' 'TAGCYRKMVBHD' | rev  
+	for s in $(ls 00_RawData/Extend/${sample_group}_split)
+	do
+		# echo $s
+		cutadapt -g $forward_primer -e 0.15 00_RawData/Extend/${sample_group}_split/$s -o 00_RawData/Extend/${sample_group}_noprimer/tmp/$s && \
+		cutadapt -a $reverse_primer2 -e 0.15 00_RawData/Extend/${sample_group}_noprimer/tmp/$s -o 00_RawData/Extend/${sample_group}_noprimer/$s
+	done
 
-	# 质控
+	# # 质控
 	mkdir -p 00_RawData/TrimQC/tmp
 	for q in $(ls 00_RawData/Extend/${sample_group}_noprimer | grep 'gz')
 	do
@@ -61,5 +76,6 @@ do
 	done
 done
 
-
+python3 ~/code/QcStatic.py .
+cd $ori_path
 
